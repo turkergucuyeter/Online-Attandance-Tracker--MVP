@@ -1,0 +1,268 @@
+openapi: 3.0.1
+info:
+  title: Online Yoklama Takip API
+  version: 0.1.0
+  description: Manuel yoklama süreçlerini yöneten REST API.
+servers:
+  - url: http://localhost:8000
+paths:
+  /auth/login:
+    post:
+      summary: Kullanıcı girişi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Giriş başarılı
+  /supervisor/teachers:
+    get:
+      summary: Öğretmen listesi
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+    post:
+      summary: Öğretmen oluştur
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                display_color:
+                  type: string
+      responses:
+        '201':
+          description: Oluşturuldu
+  /supervisor/students:
+    get:
+      summary: Öğrenci listesi
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+    post:
+      summary: Öğrenci oluştur
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                student_no:
+                  type: string
+      responses:
+        '201':
+          description: Oluşturuldu
+  /supervisor/classes:
+    get:
+      summary: Sınıf listesi
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+    post:
+      summary: Sınıf oluştur
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                grade:
+                  type: integer
+                branch:
+                  type: string
+  /supervisor/courses:
+    get:
+      summary: Ders listesi
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+    post:
+      summary: Ders oluştur
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                code:
+                  type: string
+                class_id:
+                  type: integer
+                teacher_id:
+                  type: integer
+  /supervisor/schedule-sessions:
+    get:
+      summary: Oturum listesi
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+    post:
+      summary: Oturum oluştur
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                course_id:
+                  type: integer
+                term_id:
+                  type: integer
+                date:
+                  type: string
+                start_time:
+                  type: string
+                end_time:
+                  type: string
+  /teacher/classes:
+    get:
+      summary: Öğretmene ait sınıflar
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+  /teacher/classes/{id}/sessions:
+    get:
+      summary: Sınıfa ait oturumlar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+  /teacher/sessions/{id}/attendance:
+    get:
+      summary: Oturum yoklaması
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+    post:
+      summary: Yoklama kaydet
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      student_id:
+                        type: integer
+                      status:
+                        type: string
+    patch:
+      summary: Yoklama güncelle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      student_id:
+                        type: integer
+                      status:
+                        type: string
+  /student/courses:
+    get:
+      summary: Öğrenci dersleri
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+  /student/courses/{id}/attendance-summary:
+    get:
+      summary: Öğrenci ders özeti
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Başarılı
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
