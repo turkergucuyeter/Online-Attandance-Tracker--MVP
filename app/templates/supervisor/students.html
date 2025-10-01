@@ -4,7 +4,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
   <h1 class="mb-0">Öğrenciler</h1>
   <div class="d-flex gap-2">
-    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importCsvModal">CSV'den Aktar</button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importCsvModal">CSV/Excel'den Aktar</button>
     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importPdfModal">PDF'den Aktar</button>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">Öğrenci Ekle</button>
   </div>
@@ -30,6 +30,30 @@
     <button class="btn btn-secondary w-100" type="submit">Filtrele</button>
   </div>
 </form>
+{% if import_report %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <h2 class="h5 mb-0">İçe Aktarma Sonucu</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-1">{{ import_report.source }} dosyasından toplam <strong>{{ import_report.total }}</strong> satır işlendi.</p>
+      <p class="mb-3">Kaydedilen öğrenci sayısı: <strong>{{ import_report.created }}</strong></p>
+      {% if import_report.skipped_rows %}
+        <div class="alert alert-warning mb-0">
+          <h3 class="h6 mb-2">Atlanan Satırlar</h3>
+          <ul class="mb-0">
+            {% for skipped in import_report.skipped_rows %}
+              <li>Satır {{ skipped.row }} &mdash; {{ skipped.reason }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <div class="alert alert-success mb-0">Tüm satırlar başarıyla kaydedildi.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
 {% if generated_credentials %}
   <div class="card mb-4">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -236,10 +260,10 @@
         <h5 class="modal-title">CSV'den Öğrenci Aktar</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
       </div>
-      <form method="post" action="{{ url_for('supervisor.import_students_csv') }}" enctype="multipart/form-data">
+      <form method="post" action="{{ url_for('supervisor.import_students') }}" enctype="multipart/form-data">
         <div class="modal-body">
-          <p class="mb-2">CSV dosyanızda şu başlıklar bulunmalıdır: <strong>ad, soyad, okul_numarasi, sinif</strong>.</p>
-          <input type="file" class="form-control" name="file" accept=".csv" required>
+          <p class="mb-2">CSV veya Excel dosyanızda şu başlıklar bulunmalıdır: <strong>ad, soyad, okul_numarasi, sinif</strong>.</p>
+          <input type="file" class="form-control" name="file" accept=".csv,.xls,.xlsx,application/pdf" required>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
@@ -257,10 +281,10 @@
         <h5 class="modal-title">PDF'den Öğrenci Aktar</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
       </div>
-      <form method="post" action="{{ url_for('supervisor.import_students_pdf') }}" enctype="multipart/form-data">
+      <form method="post" action="{{ url_for('supervisor.import_students') }}" enctype="multipart/form-data">
         <div class="modal-body">
-          <p class="mb-2">PDF içerisindeki tablo başlıkları: <strong>ad, soyad, okul_numarasi, sinif</strong> olmalıdır.</p>
-          <input type="file" class="form-control" name="file" accept="application/pdf" required>
+          <p class="mb-2">PDF içerisindeki tablo başlıkları: <strong>ad, soyad, okul_numarasi, sinif</strong> olmalıdır. Excel veya CSV yüklemek isterseniz diğer modalı da kullanabilirsiniz.</p>
+          <input type="file" class="form-control" name="file" accept=".csv,.xls,.xlsx,application/pdf" required>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>

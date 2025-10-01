@@ -8,7 +8,7 @@ Okullarda devamsızlık süreçlerini sade ve güvenli biçimde yönetmek için 
 
 - **Yönetici (Supervisor)**
   - Öğretmen, ders, sınıf ve öğrenci yönetimi (ekleme/düzenleme/silme).
-  - CSV veya PDF formatındaki öğrenci listelerini içeri aktarma.
+  - CSV, Excel veya PDF formatındaki öğrenci listelerini içeri aktarma.
 - Öğrenciler için isteğe bağlı olarak giriş hesabı (e-posta/şifre) oluşturma veya güncelleme.
   - Boş bırakılan e-posta / şifre alanları için otomatik öğrenci kimlik bilgileri üretme.
   - Öğretmenlerin aldığı yoklamaları görüntüleme, filtreleme ve düzenleme.
@@ -58,7 +58,7 @@ Varsayılan olarak uygulama `http://127.0.0.1:5000` adresinde çalışır. Çal�
 
 Sistem tüm kullanıcılar için aynı giriş sayfasını kullanır; rol farkı giriş yaptıktan sonra otomatik olarak yönlendirilir.
 
-## CSV / PDF İçeri Aktarma Formatı
+## CSV / Excel / PDF İçeri Aktarma Formatı
 
 Dosyalar aşağıdaki başlıklara sahip bir tablo içermelidir:
 
@@ -66,7 +66,9 @@ Dosyalar aşağıdaki başlıklara sahip bir tablo içermelidir:
 ad, soyad, okul_numarasi, sinif
 ```
 
-PDF içe aktarma özelliği; satırların bu başlıklarla yapılandırıldığı, tablo biçimindeki dokümanlar ile uyumludur.
+CSV ve Excel dosyaları doğrudan aynı başlıkları içermelidir. PDF içe aktarma özelliği; satırların bu başlıklarla yapılandırıldığı, tablo biçimindeki dokümanlar ile uyumludur.
+
+> Not: Excel (`.xls` / `.xlsx`) içe aktarma desteği için uygulama `openpyxl` kütüphanesini kullanır. Bu bağımlılık `requirements.txt` dosyasına eklenmiştir; kurulum adımlarını izlediğinizde otomatik olarak yüklenecektir.
 
 ## Otomatik Öğrenci Hesapları ve İndirme
 
