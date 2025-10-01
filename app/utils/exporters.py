@@ -6,6 +6,8 @@ from typing import Iterable
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFError, TTFont
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 from ..models import AttendanceRecord
@@ -46,6 +48,30 @@ def generate_pdf(records: Iterable[AttendanceRecord]) -> io.BytesIO:
     styles = getSampleStyleSheet()
     story = []
 
+    fonts_to_register = {
+        'DejaVuSans': '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        'DejaVuSans-Bold': '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+    }
+    registered_fonts = set(pdfmetrics.getRegisteredFontNames())
+
+    for font_name, font_path in fonts_to_register.items():
+        if font_name in registered_fonts:
+            continue
+        try:
+            pdfmetrics.registerFont(TTFont(font_name, font_path))
+        except (TTFError, FileNotFoundError, OSError):
+            continue
+        registered_fonts.add(font_name)
+
+    if 'DejaVuSans' in registered_fonts:
+        styles['Normal'].fontName = 'DejaVuSans'
+        styles['BodyText'].fontName = 'DejaVuSans'
+    if 'DejaVuSans-Bold' in registered_fonts:
+        styles['Heading3'].fontName = 'DejaVuSans-Bold'
+
+    header_font = 'DejaVuSans-Bold' if 'DejaVuSans-Bold' in registered_fonts else 'Helvetica-Bold'
+    body_font = 'DejaVuSans' if 'DejaVuSans' in registered_fonts else 'Helvetica'
+
     for record in records:
         story.append(Paragraph(f"Ders: {record.course.name} ({record.course.code})", styles['Heading3']))
         story.append(Paragraph(f"Sınıf: {record.classroom.name}", styles['Normal']))
@@ -62,7 +88,8 @@ def generate_pdf(records: Iterable[AttendanceRecord]) -> io.BytesIO:
                     ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTNAME', (0, 0), (-1, 0), header_font),
+                    ('FONTNAME', (0, 1), (-1, -1), body_font),
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
                     ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
