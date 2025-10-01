@@ -28,6 +28,48 @@
     </div>
   </div>
 </div>
+<div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mt-4">
+  <div class="col">
+    <a class="card h-100 text-center text-decoration-none text-dark quick-link-card" href="{{ url_for('supervisor.teachers') }}">
+      <div class="card-body">
+        <h5 class="card-title">Öğretmenler</h5>
+        <p class="card-text text-muted">Eğitmen kadrosunu yönetin.</p>
+      </div>
+    </a>
+  </div>
+  <div class="col">
+    <a class="card h-100 text-center text-decoration-none text-dark quick-link-card" href="{{ url_for('supervisor.courses_view') }}">
+      <div class="card-body">
+        <h5 class="card-title">Dersler</h5>
+        <p class="card-text text-muted">Ders bilgilerini düzenleyin.</p>
+      </div>
+    </a>
+  </div>
+  <div class="col">
+    <a class="card h-100 text-center text-decoration-none text-dark quick-link-card" href="{{ url_for('supervisor.classes_view') }}">
+      <div class="card-body">
+        <h5 class="card-title">Sınıflar</h5>
+        <p class="card-text text-muted">Sınıf ve şubeleri güncelleyin.</p>
+      </div>
+    </a>
+  </div>
+  <div class="col">
+    <a class="card h-100 text-center text-decoration-none text-dark quick-link-card" href="{{ url_for('supervisor.students_view') }}">
+      <div class="card-body">
+        <h5 class="card-title">Öğrenciler</h5>
+        <p class="card-text text-muted">Öğrenci kayıtlarını yönetin.</p>
+      </div>
+    </a>
+  </div>
+  <div class="col">
+    <a class="card h-100 text-center text-decoration-none text-dark quick-link-card" href="{{ url_for('supervisor.attendance_overview') }}">
+      <div class="card-body">
+        <h5 class="card-title">Yoklamalar</h5>
+        <p class="card-text text-muted">Yoklama kayıtlarına göz atın.</p>
+      </div>
+    </a>
+  </div>
+</div>
 <div class="card mt-4">
   <div class="card-header">Son Yoklamalar</div>
   <div class="card-body table-responsive">

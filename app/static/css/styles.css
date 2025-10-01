@@ -21,6 +21,18 @@ body {
   color: #6c757d;
 }
 
+.quick-link-card {
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quick-link-card:hover,
+.quick-link-card:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(13, 110, 253, 0.15);
+}
+
 .table thead th {
   white-space: nowrap;
 }

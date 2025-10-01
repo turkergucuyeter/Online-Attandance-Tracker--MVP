@@ -16,7 +16,45 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
+          {% if current_user.is_authenticated %}
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              {% if current_user.is_supervisor() %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('supervisor.dashboard') }}">Panel</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('supervisor.teachers') }}">Öğretmenler</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('supervisor.courses_view') }}">Dersler</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('supervisor.classes_view') }}">Sınıflar</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('supervisor.students_view') }}">Öğrenciler</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('supervisor.attendance_overview') }}">Yoklamalar</a>
+                </li>
+              {% elif current_user.is_teacher() %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('teacher.dashboard') }}">Panel</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('teacher.create_attendance') }}">Yoklama Oluştur</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('teacher.history') }}">Yoklama Geçmişi</a>
+                </li>
+              {% elif current_user.is_student() %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('student.dashboard') }}">Panel</a>
+                </li>
+              {% endif %}
+            </ul>
+          {% endif %}
+          <ul class="navbar-nav ms-lg-auto mb-2 mb-lg-0">
             {% if current_user.is_authenticated %}
               <li class="nav-item"><span class="nav-link">{{ current_user.full_name }}</span></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Çıkış</a></li>
