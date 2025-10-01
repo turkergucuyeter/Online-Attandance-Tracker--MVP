@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 
 from flask import (
     Blueprint,
@@ -25,7 +26,7 @@ from ..models import (
 from ..utils.accounts import generate_student_credentials
 from ..utils.decorators import role_required
 from ..utils.exporters import generate_csv, generate_pdf
-from ..utils.importers import parse_csv, parse_pdf
+from ..utils.importers import parse_csv, parse_pdf, parse_excel
 
 
 supervisor_bp = Blueprint('supervisor', __name__, url_prefix='/supervisor')
@@ -270,6 +271,7 @@ def students_view():
 
     students = students_query.order_by(Student.full_name).all()
     generated_credentials = session.get('new_student_credentials', [])
+    import_report = session.pop('last_import_report', None)
 
     return render_template(
         'supervisor/students.html',
@@ -279,6 +281,7 @@ def students_view():
         class_filter=class_filter,
         course_filter=course_filter,
         generated_credentials=generated_credentials,
+        import_report=import_report,
     )
 
 
@@ -479,59 +482,128 @@ def delete_student(student_id):
     return redirect(url_for('supervisor.students_view'))
 
 
-@supervisor_bp.route('/ogrenciler/iceri-aktar/csv', methods=['POST'])
+@supervisor_bp.route('/ogrenciler/iceri-aktar', methods=['POST'])
 @role_required('supervisor')
-def import_students_csv():
+def import_students():
     file = request.files.get('file')
-    if not file:
-        flash('Lütfen bir CSV dosyası seçin.', 'warning')
+    if not file or not file.filename:
+        flash('Lütfen bir dosya seçin.', 'warning')
         return redirect(url_for('supervisor.students_view'))
+
     try:
-        students_data = parse_csv(file)
-        _bulk_create_students(students_data)
-        flash(f"{len(students_data)} öğrenci CSV'den başarıyla aktarıldı.", 'success')
+        source_label, students_data = _parse_student_file(file)
+        if not students_data:
+            raise ValueError('Dosyada aktarılabilir öğrenci verisi bulunamadı.')
+        result = _bulk_create_students(students_data)
     except Exception as exc:  # noqa: BLE001
         flash(str(exc), 'danger')
+        return redirect(url_for('supervisor.students_view'))
+
+    for credential in result['credentials']:
+        _store_generated_credentials(**credential)
+
+    session['last_import_report'] = {
+        'source': source_label,
+        'total': len(students_data),
+        'created': result['created'],
+        'skipped_rows': result['skipped_rows'],
+    }
+
+    if result['created']:
+        flash(
+            f"{result['created']} öğrenci {source_label} dosyasından başarıyla aktarıldı.",
+            'success',
+        )
+    if result['skipped_rows']:
+        flash(
+            f"{len(result['skipped_rows'])} satır atlandı. Ayrıntılar sonuç panelinde listelendi.",
+            'warning',
+        )
     return redirect(url_for('supervisor.students_view'))
 
 
-@supervisor_bp.route('/ogrenciler/iceri-aktar/pdf', methods=['POST'])
-@role_required('supervisor')
-def import_students_pdf():
-    file = request.files.get('file')
-    if not file:
-        flash('Lütfen bir PDF dosyası seçin.', 'warning')
-        return redirect(url_for('supervisor.students_view'))
-    try:
-        students_data = parse_pdf(file)
-        _bulk_create_students(students_data)
-        flash(f"{len(students_data)} öğrenci PDF'den başarıyla aktarıldı.", 'success')
-    except Exception as exc:  # noqa: BLE001
-        flash(str(exc), 'danger')
-    return redirect(url_for('supervisor.students_view'))
+def _parse_student_file(file_storage):
+    filename = (file_storage.filename or '').lower()
+    extension = Path(filename).suffix
+    mimetype = (file_storage.mimetype or '').lower()
+
+    if extension == '.csv':
+        return 'CSV', parse_csv(file_storage)
+    if extension in {'.xls', '.xlsx'}:
+        return 'Excel', parse_excel(file_storage)
+    if extension == '.pdf':
+        return 'PDF', parse_pdf(file_storage)
+
+    if 'pdf' in mimetype:
+        return 'PDF', parse_pdf(file_storage)
+    if 'excel' in mimetype or 'spreadsheet' in mimetype:
+        return 'Excel', parse_excel(file_storage)
+    if 'csv' in mimetype or mimetype == 'text/plain':
+        return 'CSV', parse_csv(file_storage)
+
+    raise ValueError('Desteklenmeyen dosya türü. Lütfen CSV, Excel veya PDF yükleyin.')
 
 
 def _bulk_create_students(students_data):
-    for student_info in students_data:
-        if not student_info['student_number']:
+    created_count = 0
+    skipped_rows = []
+    generated_credentials = []
+
+    for fallback_index, student_info in enumerate(students_data, start=2):
+        row_number = student_info.get('source_row', fallback_index)
+        student_number = student_info.get('student_number', '').strip()
+        if not student_number:
+            skipped_rows.append({'row': row_number, 'reason': 'Okul numarası eksik.'})
             continue
-        existing = Student.query.filter_by(student_number=student_info['student_number']).first()
+
+        existing = Student.query.filter_by(student_number=student_number).first()
         if existing:
+            skipped_rows.append({'row': row_number, 'reason': 'Okul numarası zaten kayıtlı.'})
             continue
-        class_name = student_info['class_name'] or 'Genel'
+
+        class_name = student_info.get('class_name', '').strip() or 'Genel'
         classroom = ClassRoom.query.filter_by(name=class_name).first()
         if not classroom:
             classroom = ClassRoom(name=class_name)
             db.session.add(classroom)
             db.session.flush()
+
+        full_name = student_info.get('full_name', '').strip() or 'İsimsiz Öğrenci'
+        email, password = generate_student_credentials(full_name, student_number)
+
+        user = User(full_name=full_name, email=email, role='student')
+        user.password_hash = generate_password_hash(password)
+        db.session.add(user)
+        db.session.flush()
+
         student = Student(
-            full_name=student_info['full_name'] or 'İsimsiz Öğrenci',
-            student_number=student_info['student_number'],
+            full_name=full_name,
+            student_number=student_number,
             classroom_id=classroom.id,
+            user_id=user.id,
         )
         student.courses = list(classroom.courses)
         db.session.add(student)
+
+        generated_credentials.append(
+            {
+                'full_name': full_name,
+                'student_number': student_number,
+                'email': email,
+                'password': password,
+                'auto_email': True,
+                'auto_password': True,
+            }
+        )
+        created_count += 1
+
     db.session.commit()
+
+    return {
+        'created': created_count,
+        'skipped_rows': skipped_rows,
+        'credentials': generated_credentials,
+    }
 
 
 # ------------------ ATTENDANCE ------------------ #
