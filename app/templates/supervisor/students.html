@@ -30,6 +30,59 @@
     <button class="btn btn-secondary w-100" type="submit">Filtrele</button>
   </div>
 </form>
+{% if generated_credentials %}
+  <div class="card mb-4">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h2 class="h5 mb-0">Oluşturulan Öğrenci Kimlik Bilgileri</h2>
+      <a class="btn btn-outline-success" href="{{ url_for('supervisor.download_generated_credentials') }}">
+        CSV Olarak İndir
+      </a>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped mb-0">
+          <thead>
+            <tr>
+              <th>Ad Soyad</th>
+              <th>Okul No</th>
+              <th>E-posta</th>
+              <th>Şifre</th>
+              <th class="text-center">E-posta Otomatik</th>
+              <th class="text-center">Şifre Otomatik</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for credential in generated_credentials %}
+              <tr>
+                <td>{{ credential.full_name }}</td>
+                <td>{{ credential.student_number }}</td>
+                <td><code>{{ credential.email }}</code></td>
+                <td><code>{{ credential.password }}</code></td>
+                <td class="text-center">
+                  {% if credential.auto_email %}
+                    <span class="badge bg-success">Evet</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Hayır</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if credential.auto_password %}
+                    <span class="badge bg-success">Evet</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Hayır</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="small text-muted px-3 py-2 border-top">
+        Bu bilgiler oturumunuz süresince saklanır. İndirme sonrası güvenli bir şekilde paylaşmayı unutmayın.
+      </div>
+    </div>
+  </div>
+{% endif %}
 <div class="table-responsive">
   <table class="table table-striped align-middle">
     <thead>

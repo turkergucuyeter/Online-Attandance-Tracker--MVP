@@ -9,7 +9,8 @@ Okullarda devamsızlık süreçlerini sade ve güvenli biçimde yönetmek için 
 - **Yönetici (Supervisor)**
   - Öğretmen, ders, sınıf ve öğrenci yönetimi (ekleme/düzenleme/silme).
   - CSV veya PDF formatındaki öğrenci listelerini içeri aktarma.
-  - Öğrenciler için isteğe bağlı olarak giriş hesabı (e-posta/şifre) oluşturma veya güncelleme.
+- Öğrenciler için isteğe bağlı olarak giriş hesabı (e-posta/şifre) oluşturma veya güncelleme.
+  - Boş bırakılan e-posta / şifre alanları için otomatik öğrenci kimlik bilgileri üretme.
   - Öğretmenlerin aldığı yoklamaları görüntüleme, filtreleme ve düzenleme.
   - Yoklama kayıtlarını CSV veya PDF olarak dışa aktarma.
 - **Öğretmen**
@@ -66,6 +67,13 @@ ad, soyad, okul_numarasi, sinif
 ```
 
 PDF içe aktarma özelliği; satırların bu başlıklarla yapılandırıldığı, tablo biçimindeki dokümanlar ile uyumludur.
+
+## Otomatik Öğrenci Hesapları ve İndirme
+
+- Yönetici panelinden öğrenci eklerken/düzenlerken e-posta veya şifre alanı boş bırakıldığında sistem otomatik olarak `ogrenci.okul` alan adında benzersiz bir e-posta ve güçlü bir şifre üretir.
+- Oluşturulan bilgiler, sayfanın üst kısmındaki "Oluşturulan Öğrenci Kimlik Bilgileri" kartında listelenir ve yalnızca mevcut oturum boyunca saklanır.
+- Kart üzerindeki **CSV Olarak İndir** bağlantısını kullanarak tüm üretilen kimlik bilgilerini tek seferde dışa aktarabilir, dosyayı güvenli biçimde paylaşabilirsiniz.
+- Listede hangi bilgilerin otomatik oluşturulduğu rozetlerle belirtilir; manuel girilen değerler "Hayır" olarak işaretlenir.
 
 ## Güvenlik Notları
 

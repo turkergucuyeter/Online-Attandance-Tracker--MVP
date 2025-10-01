@@ -7,6 +7,7 @@ from flask import (
     render_template,
     request,
     send_file,
+    session,
     url_for,
 )
 from sqlalchemy import or_
@@ -21,6 +22,7 @@ from ..models import (
     Student,
     User,
 )
+from ..utils.accounts import generate_student_credentials
 from ..utils.decorators import role_required
 from ..utils.exporters import generate_csv, generate_pdf
 from ..utils.importers import parse_csv, parse_pdf
@@ -267,6 +269,8 @@ def students_view():
         students_query = students_query.join(Student.courses).filter(Course.id == course_filter)
 
     students = students_query.order_by(Student.full_name).all()
+    generated_credentials = session.get('new_student_credentials', [])
+
     return render_template(
         'supervisor/students.html',
         students=students,
@@ -274,6 +278,7 @@ def students_view():
         courses=courses,
         class_filter=class_filter,
         course_filter=course_filter,
+        generated_credentials=generated_credentials,
     )
 
 
@@ -286,6 +291,18 @@ def add_student():
     course_ids = [int(cid) for cid in request.form.getlist('course_ids') if cid]
     email = request.form.get('email', '').strip()
     password = request.form.get('password', '').strip()
+
+    email_generated = False
+    password_generated = False
+
+    if not email or not password:
+        generated_email, generated_password = generate_student_credentials(full_name, student_number)
+        if not email:
+            email = generated_email
+            email_generated = True
+        if not password:
+            password = generated_password
+            password_generated = True
 
     if Student.query.filter_by(student_number=student_number).first():
         flash('Bu okul numarası zaten kayıtlı.', 'danger')
@@ -302,9 +319,6 @@ def add_student():
             if password:
                 user.password_hash = generate_password_hash(password)
         else:
-            if not password:
-                flash('Yeni öğrenci hesabı için şifre girmelisiniz.', 'warning')
-                return redirect(url_for('supervisor.students_view'))
             user = User(full_name=full_name, email=email, role='student')
             user.password_hash = generate_password_hash(password)
             db.session.add(user)
@@ -317,6 +331,17 @@ def add_student():
     student.courses = Course.query.filter(Course.id.in_(course_ids)).all()
     db.session.add(student)
     db.session.commit()
+
+    if email_generated or password_generated:
+        _store_generated_credentials(
+            full_name,
+            student_number,
+            email,
+            password,
+            email_generated,
+            password_generated,
+        )
+
     flash('Öğrenci eklendi.', 'success')
     return redirect(url_for('supervisor.students_view'))
 
@@ -332,6 +357,21 @@ def edit_student(student_id):
     email = request.form.get('email', '').strip()
     password = request.form.get('password', '').strip()
 
+    email_generated = False
+    password_generated = False
+
+    if not email or not password:
+        generated_email, generated_password = generate_student_credentials(
+            student.full_name,
+            student.student_number,
+        )
+        if not email:
+            email = generated_email
+            email_generated = True
+        if not password:
+            password = generated_password
+            password_generated = True
+
     student.courses = Course.query.filter(Course.id.in_(course_ids)).all()
 
     if email:
@@ -343,9 +383,6 @@ def edit_student(student_id):
                 return redirect(url_for('supervisor.students_view'))
             student.user = existing_user
         if not student.user:
-            if not password:
-                flash('Yeni öğrenci hesabı için şifre girmelisiniz.', 'warning')
-                return redirect(url_for('supervisor.students_view'))
             user = User(full_name=student.full_name, email=email, role='student')
             user.password_hash = generate_password_hash(password)
             db.session.add(user)
@@ -359,9 +396,77 @@ def edit_student(student_id):
     elif student.user:
         student.user.full_name = student.full_name
 
+    if email_generated or password_generated:
+        _store_generated_credentials(
+            student.full_name,
+            student.student_number,
+            email,
+            password,
+            email_generated,
+            password_generated,
+        )
+
     db.session.commit()
     flash('Öğrenci güncellendi.', 'success')
     return redirect(url_for('supervisor.students_view'))
+
+
+@supervisor_bp.route('/ogrenciler/yeni-kimlik-bilgileri.csv')
+@role_required('supervisor')
+def download_generated_credentials():
+    credentials = session.get('new_student_credentials', [])
+    if not credentials:
+        flash('İndirilecek yeni kimlik bilgisi bulunmuyor.', 'info')
+        return redirect(url_for('supervisor.students_view'))
+
+    import csv
+    import io
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Ad Soyad', 'Okul No', 'E-posta', 'Şifre', 'E-posta Otomatik', 'Şifre Otomatik'])
+    for item in credentials:
+        writer.writerow(
+            [
+                item.get('full_name', ''),
+                item.get('student_number', ''),
+                item.get('email', ''),
+                item.get('password', ''),
+                'Evet' if item.get('auto_email') else 'Hayır',
+                'Evet' if item.get('auto_password') else 'Hayır',
+            ]
+        )
+
+    output.seek(0)
+    filename = f"ogrenci_kimlikleri_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+    return send_file(
+        io.BytesIO(output.getvalue().encode('utf-8')),
+        as_attachment=True,
+        download_name=filename,
+        mimetype='text/csv; charset=utf-8',
+    )
+
+
+def _store_generated_credentials(
+    full_name: str,
+    student_number: str,
+    email: str,
+    password: str,
+    auto_email: bool,
+    auto_password: bool,
+) -> None:
+    credentials = session.get('new_student_credentials', [])
+    credentials.append(
+        {
+            'full_name': full_name,
+            'student_number': student_number,
+            'email': email,
+            'password': password,
+            'auto_email': auto_email,
+            'auto_password': auto_password,
+        }
+    )
+    session['new_student_credentials'] = credentials
 
 
 @supervisor_bp.route('/ogrenciler/<int:student_id>/sil', methods=['POST'])
