@@ -8,39 +8,85 @@
     <a class="btn btn-outline-secondary" href="{{ url_for('supervisor.export_attendance_pdf', **request.args) }}">PDF İndir</a>
   </div>
 </div>
-<form class="row g-2 mb-3">
-  <div class="col-md-3">
-    <select class="form-select" name="class_id">
+<form class="row g-3 align-items-end mb-4" method="get">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <label for="classSelect" class="form-label">Sınıf</label>
+    <select class="form-select" id="classSelect" name="class_id">
       <option value="">Tüm Sınıflar</option>
       {% for class_ in classes %}
         <option value="{{ class_.id }}" {% if class_filter == class_.id %}selected{% endif %}>{{ class_.name }}</option>
       {% endfor %}
     </select>
   </div>
-  <div class="col-md-3">
-    <select class="form-select" name="course_id">
-      <option value="">Tüm Dersler</option>
+  <div class="col-12 col-sm-6 col-xl-3">
+    <label for="courseSearch" class="form-label">Ders Ara</label>
+    <input type="search" class="form-control" id="courseSearch" name="course_query" value="{{ course_query }}" list="course-options" placeholder="Ders adı ya da kodu yazın">
+    <datalist id="course-options">
       {% for course in courses %}
-        <option value="{{ course.id }}" {% if course_filter == course.id %}selected{% endif %}>{{ course.name }}</option>
+        <option value="{{ course.name }}" label="{{ course.code }}"></option>
+        <option value="{{ course.code }}" label="{{ course.name }}"></option>
       {% endfor %}
-    </select>
+    </datalist>
+    <div class="form-text">Ders adı veya kodu ile arama yapabilirsiniz.</div>
   </div>
-  <div class="col-md-2">
-    <select class="form-select" name="teacher_id">
-      <option value="">Tüm Öğretmenler</option>
+  <div class="col-12 col-sm-6 col-xl-3">
+    <label for="teacherSearch" class="form-label">Öğretmen Ara</label>
+    <input type="search" class="form-control" id="teacherSearch" name="teacher_query" value="{{ teacher_query }}" list="teacher-options" placeholder="Öğretmen adı ya da e-posta yazın">
+    <datalist id="teacher-options">
       {% for teacher in teachers %}
-        <option value="{{ teacher.id }}" {% if teacher_filter == teacher.id %}selected{% endif %}>{{ teacher.full_name }}</option>
+        <option value="{{ teacher.full_name }}" label="{{ teacher.email }}"></option>
+        <option value="{{ teacher.email }}" label="{{ teacher.full_name }}"></option>
       {% endfor %}
-    </select>
+    </datalist>
+    <div class="form-text">Öğretmen adı veya e-posta adresiyle arama yapabilirsiniz.</div>
   </div>
-  <div class="col-md-2">
-    <input type="date" class="form-control" name="date_from" value="{{ date_from }}" placeholder="Başlangıç">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <label for="studentSearch" class="form-label">Öğrenci Ara</label>
+    <input type="search" class="form-control" id="studentSearch" name="student_query" value="{{ student_query }}" list="student-options" placeholder="Öğrenci adı ya da numarası yazın">
+    <datalist id="student-options">
+      {% for student in students %}
+        <option value="{{ student.full_name }}" label="{{ student.student_number }}"></option>
+        <option value="{{ student.student_number }}" label="{{ student.full_name }}"></option>
+      {% endfor %}
+    </datalist>
+    <div class="form-text">Öğrenci adı veya numarası ile arama yapabilirsiniz.</div>
   </div>
-  <div class="col-md-2">
-    <input type="date" class="form-control" name="date_to" value="{{ date_to }}" placeholder="Bitiş">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <label for="dateFrom" class="form-label">Başlangıç Tarihi</label>
+    <input type="date" class="form-control" id="dateFrom" name="date_from" value="{{ date_from }}" placeholder="Başlangıç">
   </div>
-  <div class="col-md-12">
-    <button class="btn btn-secondary" type="submit">Filtrele</button>
+  <div class="col-12 col-sm-6 col-xl-3">
+    <label for="dateTo" class="form-label">Bitiş Tarihi</label>
+    <input type="date" class="form-control" id="dateTo" name="date_to" value="{{ date_to }}" placeholder="Bitiş">
+  </div>
+  <div class="col-12">
+    <details class="border rounded p-3 bg-body-tertiary">
+      <summary class="fw-semibold">ID ile filtreleme (opsiyonel)</summary>
+      <div class="row g-2 mt-2">
+        <div class="col-12 col-md-6 col-xl-4">
+          <label for="courseSelect" class="form-label">Ders ID</label>
+          <select class="form-select" id="courseSelect" name="course_id">
+            <option value="">Tüm Dersler</option>
+            {% for course in courses %}
+              <option value="{{ course.id }}" {% if course_filter == course.id %}selected{% endif %}>{{ course.name }} ({{ course.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-xl-4">
+          <label for="teacherSelect" class="form-label">Öğretmen ID</label>
+          <select class="form-select" id="teacherSelect" name="teacher_id">
+            <option value="">Tüm Öğretmenler</option>
+            {% for teacher in teachers %}
+              <option value="{{ teacher.id }}" {% if teacher_filter == teacher.id %}selected{% endif %}>{{ teacher.full_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </details>
+  </div>
+  <div class="col-12 d-flex flex-wrap gap-2">
+    <button class="btn btn-primary" type="submit">Filtrele</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('supervisor.attendance_overview') }}">Temizle</a>
   </div>
 </form>
 <div class="table-responsive">
