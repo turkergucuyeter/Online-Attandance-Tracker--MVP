@@ -35,7 +35,7 @@ def generate_csv(records: Iterable[AttendanceRecord]) -> io.BytesIO:
                 ]
             )
     buffer = io.BytesIO()
-    buffer.write(output.getvalue().encode('utf-8'))
+    buffer.write(output.getvalue().encode('utf-8-sig'))
     buffer.seek(0)
     return buffer
 

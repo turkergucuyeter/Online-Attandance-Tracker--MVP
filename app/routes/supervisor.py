@@ -499,7 +499,12 @@ def export_attendance_csv():
     records = _filtered_records()
     buffer = generate_csv(records)
     filename = f"yoklamalar_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
-    return send_file(buffer, as_attachment=True, download_name=filename, mimetype='text/csv')
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='text/csv; charset=utf-8',
+    )
 
 
 @supervisor_bp.route('/yoklamalar/indir/pdf')
