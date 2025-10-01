@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Öğrenci Paneli{% endblock %}
+{% block content %}
+<h1 class="mb-4">Merhaba, {{ student.full_name }}</h1>
+<div class="card">
+  <div class="card-header">Devamsızlık Durumun</div>
+  <div class="card-body table-responsive">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Ders</th>
+          <th>Toplam Ders</th>
+          <th>Var</th>
+          <th>Mazeretli</th>
+          <th>Mazeretsiz</th>
+          <th>Uyarılar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for info in stats %}
+          <tr>
+            <td>{{ info.course.name }} ({{ info.course.code }})</td>
+            <td>{{ info.total }}</td>
+            <td>{{ info.present }}</td>
+            <td>{{ info.excused }}</td>
+            <td>{{ info.absent }}</td>
+            <td>
+              {% if info.total == 0 %}
+                <span class="text-muted">Henüz ders işlenmedi.</span>
+              {% else %}
+                <div class="mb-2">
+                  <span class="badge bg-info text-dark">Mazeretli: {{ info.excused_pct }}%</span>
+                  <span class="badge bg-danger">Mazeretsiz: {{ info.absent_pct }}%</span>
+                </div>
+                {% if info.warnings %}
+                  <ul class="mb-0">
+                    {% for message in info.warnings %}
+                      <li class="text-danger">{{ message }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <span class="text-success">Her şey yolunda.</span>
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="text-center">Ders atamanız bulunamadı.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

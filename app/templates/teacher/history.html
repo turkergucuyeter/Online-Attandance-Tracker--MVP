@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Yoklama Geçmişi{% endblock %}
+{% block content %}
+<h1 class="mb-3">Yoklama Geçmişi</h1>
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Ders</th>
+        <th>Sınıf</th>
+        <th>Tarih</th>
+        <th>Düzenlenebilir mi?</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in records %}
+        <tr>
+          <td>{{ item.record.course.name }}</td>
+          <td>{{ item.record.classroom.name }}</td>
+          <td>{{ item.record.session_date.strftime('%d.%m.%Y %H:%M') }}</td>
+          <td>
+            {% if item.editable %}
+              <span class="badge bg-success">Evet</span>
+            {% else %}
+              <span class="badge bg-secondary">Hayır</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('teacher.edit_attendance', record_id=item.record.id) }}">Görüntüle</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="text-center">Kayıt bulunamadı.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

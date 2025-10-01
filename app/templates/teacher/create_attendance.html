@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Yoklama Oluştur{% endblock %}
+{% block content %}
+<h1 class="mb-3">Yoklama Oluştur</h1>
+<form method="get" class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label">Ders</label>
+    <select class="form-select" name="course_id" required>
+      <option value="">Seçiniz</option>
+      {% for option in course_options %}
+        <option value="{{ option.course.id }}" {% if selected_course and option.course.id == selected_course.id %}selected{% endif %}>{{ option.course.name }} ({{ option.course.code }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Sınıf</label>
+    <select class="form-select" name="class_id" required>
+      <option value="">Seçiniz</option>
+      {% if selected_course %}
+        {% for class_ in allowed_classes %}
+          <option value="{{ class_.id }}" {% if selected_class and class_.id == selected_class.id %}selected{% endif %}>{{ class_.name }}</option>
+        {% endfor %}
+      {% else %}
+        {% for option in course_options %}
+          {% for class_ in option.classes %}
+            <option value="{{ class_.id }}">{{ option.course.name }} - {{ class_.name }}</option>
+          {% endfor %}
+        {% endfor %}
+      {% endif %}
+    </select>
+  </div>
+  <div class="col-12">
+    <button class="btn btn-secondary" type="submit">Öğrencileri Listele</button>
+  </div>
+</form>
+{% if selected_course and selected_class %}
+  <form method="post" class="mt-4">
+    <input type="hidden" name="course_id" value="{{ selected_course.id }}">
+    <input type="hidden" name="class_id" value="{{ selected_class.id }}">
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead>
+          <tr>
+            <th>Öğrenci</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for student in students %}
+            <tr>
+              <td>{{ student.full_name }}</td>
+              <td>
+                <select class="form-select" name="status_{{ student.id }}">
+                  <option value="present" selected>Var</option>
+                  <option value="excused">Mazeretli</option>
+                  <option value="absent">Mazeretsiz</option>
+                </select>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex justify-content-between">
+      <a class="btn btn-outline-secondary" href="{{ url_for('teacher.dashboard') }}">Geri</a>
+      <button class="btn btn-primary" type="submit">Yoklamayı Kaydet</button>
+    </div>
+  </form>
+{% endif %}
+{% endblock %}
