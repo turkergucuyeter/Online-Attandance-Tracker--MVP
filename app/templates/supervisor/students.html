@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% block title %}Öğrenci Yönetimi{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h1 class="mb-0">Öğrenciler</h1>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importCsvModal">CSV'den Aktar</button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importPdfModal">PDF'den Aktar</button>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">Öğrenci Ekle</button>
+  </div>
+</div>
+<form class="row g-2 mb-3">
+  <div class="col-md-4">
+    <select class="form-select" name="class_id">
+      <option value="">Tüm Sınıflar</option>
+      {% for class_ in classes %}
+        <option value="{{ class_.id }}" {% if class_filter == class_.id %}selected{% endif %}>{{ class_.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <select class="form-select" name="course_id">
+      <option value="">Tüm Dersler</option>
+      {% for course in courses %}
+        <option value="{{ course.id }}" {% if course_filter == course.id %}selected{% endif %}>{{ course.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <button class="btn btn-secondary w-100" type="submit">Filtrele</button>
+  </div>
+</form>
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Ad Soyad</th>
+        <th>Okul No</th>
+        <th>Sınıf</th>
+        <th>Kullanıcı E-posta</th>
+        <th>Dersler</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for student in students %}
+        <tr>
+          <td>{{ student.full_name }}</td>
+          <td>{{ student.student_number }}</td>
+          <td>{{ student.classroom.name }}</td>
+          <td>{{ student.user.email if student.user else '-' }}</td>
+          <td>
+            {% for course in student.courses %}
+              <span class="badge bg-info text-dark">{{ course.name }}</span>
+            {% else %}
+              <span class="text-muted">Ders atanmamış</span>
+            {% endfor %}
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editStudent{{ student.id }}">Düzenle</button>
+            <form action="{{ url_for('supervisor.delete_student', student_id=student.id) }}" method="post" class="d-inline" onsubmit="return confirm('Öğrenciyi silmek istediğinize emin misiniz?');">
+              <button class="btn btn-sm btn-outline-danger">Sil</button>
+            </form>
+          </td>
+        </tr>
+
+        <div class="modal fade" id="editStudent{{ student.id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Öğrenci Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+              </div>
+              <form method="post" action="{{ url_for('supervisor.edit_student', student_id=student.id) }}">
+                <div class="modal-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Ad Soyad</label>
+                      <input type="text" class="form-control" name="full_name" value="{{ student.full_name }}" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Okul No</label>
+                      <input type="text" class="form-control" name="student_number" value="{{ student.student_number }}" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Sınıf</label>
+                      <select name="classroom_id" class="form-select" required>
+                        {% for class_ in classes %}
+                          <option value="{{ class_.id }}" {% if class_.id == student.classroom_id %}selected{% endif %}>{{ class_.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Kullanıcı E-posta</label>
+                      <input type="email" class="form-control" name="email" value="{{ student.user.email if student.user else '' }}" placeholder="Öğrenci giriş hesabı için e-posta">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Yeni Şifre</label>
+                      <input type="password" class="form-control" name="password" placeholder="Şifreyi değiştirmek için doldurun">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Dersler</label>
+                      <select name="course_ids" class="form-select" multiple size="5">
+                        {% for course in courses %}
+                          <option value="{{ course.id }}" {% if course in student.courses %}selected{% endif %}>{{ course.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                  <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <tr><td colspan="6" class="text-center">Öğrenci bulunamadı.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Yeni Öğrenci</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+      </div>
+      <form method="post" action="{{ url_for('supervisor.add_student') }}">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Ad Soyad</label>
+              <input type="text" class="form-control" name="full_name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Okul No</label>
+              <input type="text" class="form-control" name="student_number" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Sınıf</label>
+              <select name="classroom_id" class="form-select" required>
+                {% for class_ in classes %}
+                  <option value="{{ class_.id }}">{{ class_.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Kullanıcı E-posta</label>
+              <input type="email" class="form-control" name="email" placeholder="Öğrenci hesabı için e-posta">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Şifre</label>
+              <input type="password" class="form-control" name="password" placeholder="Öğrenci hesabı için şifre">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Dersler</label>
+              <select name="course_ids" class="form-select" multiple size="5">
+                {% for course in courses %}
+                  <option value="{{ course.id }}">{{ course.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+          <button type="submit" class="btn btn-primary">Ekle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="importCsvModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">CSV'den Öğrenci Aktar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+      </div>
+      <form method="post" action="{{ url_for('supervisor.import_students_csv') }}" enctype="multipart/form-data">
+        <div class="modal-body">
+          <p class="mb-2">CSV dosyanızda şu başlıklar bulunmalıdır: <strong>ad, soyad, okul_numarasi, sinif</strong>.</p>
+          <input type="file" class="form-control" name="file" accept=".csv" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+          <button type="submit" class="btn btn-primary">İçe Aktar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="importPdfModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">PDF'den Öğrenci Aktar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+      </div>
+      <form method="post" action="{{ url_for('supervisor.import_students_pdf') }}" enctype="multipart/form-data">
+        <div class="modal-body">
+          <p class="mb-2">PDF içerisindeki tablo başlıkları: <strong>ad, soyad, okul_numarasi, sinif</strong> olmalıdır.</p>
+          <input type="file" class="form-control" name="file" accept="application/pdf" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+          <button type="submit" class="btn btn-primary">İçe Aktar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

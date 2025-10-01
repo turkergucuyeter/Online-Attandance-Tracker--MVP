@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Yoklama Kayıtları{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="mb-0">Yoklama Kayıtları</h1>
+  <div class="btn-group">
+    <a class="btn btn-outline-secondary" href="{{ url_for('supervisor.export_attendance_csv', **request.args) }}">CSV İndir</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('supervisor.export_attendance_pdf', **request.args) }}">PDF İndir</a>
+  </div>
+</div>
+<form class="row g-2 mb-3">
+  <div class="col-md-3">
+    <select class="form-select" name="class_id">
+      <option value="">Tüm Sınıflar</option>
+      {% for class_ in classes %}
+        <option value="{{ class_.id }}" {% if class_filter == class_.id %}selected{% endif %}>{{ class_.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select class="form-select" name="course_id">
+      <option value="">Tüm Dersler</option>
+      {% for course in courses %}
+        <option value="{{ course.id }}" {% if course_filter == course.id %}selected{% endif %}>{{ course.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select class="form-select" name="teacher_id">
+      <option value="">Tüm Öğretmenler</option>
+      {% for teacher in teachers %}
+        <option value="{{ teacher.id }}" {% if teacher_filter == teacher.id %}selected{% endif %}>{{ teacher.full_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <input type="date" class="form-control" name="date_from" value="{{ date_from }}" placeholder="Başlangıç">
+  </div>
+  <div class="col-md-2">
+    <input type="date" class="form-control" name="date_to" value="{{ date_to }}" placeholder="Bitiş">
+  </div>
+  <div class="col-md-12">
+    <button class="btn btn-secondary" type="submit">Filtrele</button>
+  </div>
+</form>
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Ders</th>
+        <th>Kod</th>
+        <th>Sınıf</th>
+        <th>Öğretmen</th>
+        <th>Tarih</th>
+        <th>İşlemler</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for record in records %}
+        <tr>
+          <td>{{ record.course.name }}</td>
+          <td>{{ record.course.code }}</td>
+          <td>{{ record.classroom.name }}</td>
+          <td>
+            <span class="badge" style="background-color: {{ record.teacher.color or '#0d6efd' }}">{{ record.teacher.full_name }}</span>
+          </td>
+          <td>{{ record.session_date.strftime('%d.%m.%Y %H:%M') }}</td>
+          <td>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('supervisor.edit_attendance', record_id=record.id) }}">Görüntüle / Düzenle</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center">Yoklama kaydı bulunamadı.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

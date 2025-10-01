@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Ders Yönetimi{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1>Dersler</h1>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">Ders Ekle</button>
+</div>
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Ders Adı</th>
+        <th>Kod</th>
+        <th>Maz. Mazeretli %</th>
+        <th>Maz. Mazeretsiz %</th>
+        <th>Sınıflar</th>
+        <th>Öğretmenler</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for course in courses %}
+        <tr>
+          <td>{{ course.name }}</td>
+          <td>{{ course.code }}</td>
+          <td>{{ course.max_excused_percentage }}</td>
+          <td>{{ course.max_unexcused_percentage }}</td>
+          <td>
+            {% for class_ in course.classrooms %}
+              <span class="badge bg-secondary">{{ class_.name }}</span>
+            {% else %}
+              <span class="text-muted">Atama yok</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% for teacher in course.teachers %}
+              <span class="badge" style="background-color: {{ teacher.color or '#6c757d' }}">{{ teacher.full_name }}</span>
+            {% else %}
+              <span class="text-muted">Atama yok</span>
+            {% endfor %}
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editCourse{{ course.id }}">Düzenle</button>
+            <form action="{{ url_for('supervisor.delete_course', course_id=course.id) }}" method="post" class="d-inline" onsubmit="return confirm('Dersi silmek istediğinize emin misiniz?');">
+              <button class="btn btn-sm btn-outline-danger">Sil</button>
+            </form>
+          </td>
+        </tr>
+
+        <div class="modal fade" id="editCourse{{ course.id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Ders Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+              </div>
+              <form method="post" action="{{ url_for('supervisor.edit_course', course_id=course.id) }}">
+                <div class="modal-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Ders Adı</label>
+                      <input type="text" class="form-control" name="name" value="{{ course.name }}" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Ders Kodu</label>
+                      <input type="text" class="form-control" name="code" value="{{ course.code }}" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Maks. Mazeretli %</label>
+                      <input type="number" class="form-control" name="max_excused_percentage" value="{{ course.max_excused_percentage }}" min="0" max="100">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Maks. Mazeretsiz %</label>
+                      <input type="number" class="form-control" name="max_unexcused_percentage" value="{{ course.max_unexcused_percentage }}" min="0" max="100">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Sınıflar</label>
+                      <select name="class_ids" class="form-select" multiple size="5">
+                        {% for class_ in classes %}
+                          <option value="{{ class_.id }}" {% if class_ in course.classrooms %}selected{% endif %}>{{ class_.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Öğretmenler</label>
+                      <select name="teacher_ids" class="form-select" multiple size="5">
+                        {% for teacher in teachers %}
+                          <option value="{{ teacher.id }}" {% if teacher in course.teachers %}selected{% endif %}>{{ teacher.full_name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                  <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <tr><td colspan="7" class="text-center">Henüz ders eklenmemiş.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="addCourseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Yeni Ders</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+      </div>
+      <form method="post" action="{{ url_for('supervisor.add_course') }}">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Ders Adı</label>
+              <input type="text" class="form-control" name="name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Ders Kodu</label>
+              <input type="text" class="form-control" name="code" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Maks. Mazeretli %</label>
+              <input type="number" class="form-control" name="max_excused_percentage" value="30" min="0" max="100">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Maks. Mazeretsiz %</label>
+              <input type="number" class="form-control" name="max_unexcused_percentage" value="20" min="0" max="100">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Sınıflar</label>
+              <select name="class_ids" class="form-select" multiple size="5">
+                {% for class_ in classes %}
+                  <option value="{{ class_.id }}">{{ class_.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Öğretmenler</label>
+              <select name="teacher_ids" class="form-select" multiple size="5">
+                {% for teacher in teachers %}
+                  <option value="{{ teacher.id }}">{{ teacher.full_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+          <button type="submit" class="btn btn-primary">Ekle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

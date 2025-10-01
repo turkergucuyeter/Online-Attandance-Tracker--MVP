@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Öğretmen Paneli{% endblock %}
+{% block content %}
+<h1 class="mb-4">Öğretmen Paneli</h1>
+<div class="card mb-4">
+  <div class="card-header">Yoklama Oluştur</div>
+  <div class="card-body">
+    <form class="row g-3" method="get" action="{{ url_for('teacher.create_attendance') }}">
+      <div class="col-md-6">
+        <label class="form-label">Ders</label>
+        <select class="form-select" name="course_id" required>
+          <option value="">Seçiniz</option>
+          {% for option in course_options %}
+            <option value="{{ option.course.id }}">{{ option.course.name }} ({{ option.course.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Sınıf</label>
+        <select class="form-select" name="class_id" required>
+          <option value="">Seçiniz</option>
+          {% for option in course_options %}
+            {% for class_ in option.classes %}
+              <option value="{{ class_.id }}">{{ option.course.name }} - {{ class_.name }}</option>
+            {% endfor %}
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12">
+        <button class="btn btn-primary" type="submit">Yoklama Ekranına Git</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">Son Yoklamalarım</div>
+  <div class="card-body table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Ders</th>
+          <th>Sınıf</th>
+          <th>Tarih</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in recent_records %}
+          <tr>
+            <td>{{ record.course.name }}</td>
+            <td>{{ record.classroom.name }}</td>
+            <td>{{ record.session_date.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('teacher.edit_attendance', record_id=record.id) }}">Görüntüle</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4" class="text-center">Henüz yoklama kaydı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

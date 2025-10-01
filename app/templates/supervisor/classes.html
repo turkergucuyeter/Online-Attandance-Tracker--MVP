@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Sınıf Yönetimi{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1>Sınıflar</h1>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addClassModal">Sınıf Ekle</button>
+</div>
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Sınıf Adı</th>
+        <th>Açıklama</th>
+        <th>Dersler</th>
+        <th>Öğretmenler</th>
+        <th>Öğrenci Sayısı</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for class_ in classes %}
+        <tr>
+          <td>{{ class_.name }}</td>
+          <td>{{ class_.description or '-' }}</td>
+          <td>
+            {% for course in class_.courses %}
+              <span class="badge bg-info text-dark">{{ course.name }}</span>
+            {% else %}
+              <span class="text-muted">Atama yok</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% for teacher in class_.teachers %}
+              <span class="badge" style="background-color: {{ teacher.color or '#6c757d' }}">{{ teacher.full_name }}</span>
+            {% else %}
+              <span class="text-muted">Atama yok</span>
+            {% endfor %}
+          </td>
+          <td>{{ class_.students | length }}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editClass{{ class_.id }}">Düzenle</button>
+            <form action="{{ url_for('supervisor.delete_class', class_id=class_.id) }}" method="post" class="d-inline" onsubmit="return confirm('Sınıfı silmek istediğinize emin misiniz?');">
+              <button class="btn btn-sm btn-outline-danger">Sil</button>
+            </form>
+          </td>
+        </tr>
+
+        <div class="modal fade" id="editClass{{ class_.id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Sınıf Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+              </div>
+              <form method="post" action="{{ url_for('supervisor.edit_class', class_id=class_.id) }}">
+                <div class="modal-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Sınıf Adı</label>
+                      <input type="text" class="form-control" name="name" value="{{ class_.name }}" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Açıklama</label>
+                      <input type="text" class="form-control" name="description" value="{{ class_.description }}">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Dersler</label>
+                      <select name="course_ids" class="form-select" multiple size="5">
+                        {% for course in courses %}
+                          <option value="{{ course.id }}" {% if course in class_.courses %}selected{% endif %}>{{ course.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Öğretmenler</label>
+                      <select name="teacher_ids" class="form-select" multiple size="5">
+                        {% for teacher in teachers %}
+                          <option value="{{ teacher.id }}" {% if teacher in class_.teachers %}selected{% endif %}>{{ teacher.full_name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                  <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <tr><td colspan="6" class="text-center">Henüz sınıf eklenmemiş.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="addClassModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Yeni Sınıf</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+      </div>
+      <form method="post" action="{{ url_for('supervisor.add_class') }}">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Sınıf Adı</label>
+              <input type="text" class="form-control" name="name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Açıklama</label>
+              <input type="text" class="form-control" name="description">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Dersler</label>
+              <select name="course_ids" class="form-select" multiple size="5">
+                {% for course in courses %}
+                  <option value="{{ course.id }}">{{ course.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Öğretmenler</label>
+              <select name="teacher_ids" class="form-select" multiple size="5">
+                {% for teacher in teachers %}
+                  <option value="{{ teacher.id }}">{{ teacher.full_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+          <button type="submit" class="btn btn-primary">Ekle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
