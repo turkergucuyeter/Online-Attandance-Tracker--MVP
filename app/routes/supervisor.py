@@ -613,45 +613,26 @@ def attendance_overview():
     classes = ClassRoom.query.order_by(ClassRoom.name).all()
     courses = Course.query.order_by(Course.name).all()
     teachers = User.query.filter_by(role='teacher').order_by(User.full_name).all()
+    students = Student.query.order_by(Student.full_name).all()
 
-    class_filter = request.args.get('class_id', type=int)
-    course_filter = request.args.get('course_id', type=int)
-    teacher_filter = request.args.get('teacher_id', type=int)
-    date_from = request.args.get('date_from')
-    date_to = request.args.get('date_to')
+    filters = _get_attendance_filter_values()
+    records = _query_attendance_records(filters, with_feedback=True).all()
 
-    records_query = AttendanceRecord.query.order_by(AttendanceRecord.session_date.desc())
-    if class_filter:
-        records_query = records_query.filter_by(classroom_id=class_filter)
-    if course_filter:
-        records_query = records_query.filter_by(course_id=course_filter)
-    if teacher_filter:
-        records_query = records_query.filter_by(teacher_id=teacher_filter)
-    if date_from:
-        try:
-            start = datetime.strptime(date_from, '%Y-%m-%d')
-            records_query = records_query.filter(AttendanceRecord.session_date >= start)
-        except ValueError:
-            flash('Başlangıç tarihi geçersiz.', 'warning')
-    if date_to:
-        try:
-            end = datetime.strptime(date_to, '%Y-%m-%d')
-            records_query = records_query.filter(AttendanceRecord.session_date <= end)
-        except ValueError:
-            flash('Bitiş tarihi geçersiz.', 'warning')
-
-    records = records_query.all()
     return render_template(
         'supervisor/attendance.html',
         records=records,
         classes=classes,
         courses=courses,
         teachers=teachers,
-        class_filter=class_filter,
-        course_filter=course_filter,
-        teacher_filter=teacher_filter,
-        date_from=date_from,
-        date_to=date_to,
+        students=students,
+        class_filter=filters['class_filter'],
+        course_filter=filters['course_filter'],
+        teacher_filter=filters['teacher_filter'],
+        date_from=filters['date_from'],
+        date_to=filters['date_to'],
+        course_query=filters['course_query'] or '',
+        teacher_query=filters['teacher_query'] or '',
+        student_query=filters['student_query'] or '',
     )
 
 
@@ -694,30 +675,75 @@ def export_attendance_pdf():
 
 
 def _filtered_records():
-    class_filter = request.args.get('class_id', type=int)
-    course_filter = request.args.get('course_id', type=int)
-    teacher_filter = request.args.get('teacher_id', type=int)
-    date_from = request.args.get('date_from')
-    date_to = request.args.get('date_to')
+    filters = _get_attendance_filter_values()
+    return _query_attendance_records(filters).all()
 
-    records_query = AttendanceRecord.query.order_by(AttendanceRecord.session_date.desc())
-    if class_filter:
-        records_query = records_query.filter_by(classroom_id=class_filter)
-    if course_filter:
-        records_query = records_query.filter_by(course_id=course_filter)
-    if teacher_filter:
-        records_query = records_query.filter_by(teacher_id=teacher_filter)
-    if date_from:
+
+def _get_attendance_filter_values():
+    return {
+        'class_filter': request.args.get('class_id', type=int),
+        'course_filter': request.args.get('course_id', type=int),
+        'teacher_filter': request.args.get('teacher_id', type=int),
+        'date_from': request.args.get('date_from'),
+        'date_to': request.args.get('date_to'),
+        'course_query': (request.args.get('course_query') or '').strip() or None,
+        'teacher_query': (request.args.get('teacher_query') or '').strip() or None,
+        'student_query': (request.args.get('student_query') or '').strip() or None,
+    }
+
+
+def _query_attendance_records(filters, with_feedback: bool = False):
+    records_query = AttendanceRecord.query
+
+    if filters['class_filter']:
+        records_query = records_query.filter_by(classroom_id=filters['class_filter'])
+    if filters['course_filter']:
+        records_query = records_query.filter_by(course_id=filters['course_filter'])
+    if filters['teacher_filter']:
+        records_query = records_query.filter_by(teacher_id=filters['teacher_filter'])
+
+    if filters['course_query']:
+        like = f"%{filters['course_query']}%"
+        records_query = records_query.join(AttendanceRecord.course).filter(
+            or_(Course.name.ilike(like), Course.code.ilike(like))
+        )
+    if filters['teacher_query']:
+        like = f"%{filters['teacher_query']}%"
+        records_query = records_query.join(AttendanceRecord.teacher).filter(
+            or_(User.full_name.ilike(like), User.email.ilike(like))
+        )
+
+    needs_distinct = False
+    if filters['student_query']:
+        like = f"%{filters['student_query']}%"
+        records_query = (
+            records_query.join(AttendanceRecord.entries)
+            .join(AttendanceEntry.student)
+            .filter(
+                or_(
+                    Student.full_name.ilike(like),
+                    Student.student_number.ilike(like),
+                )
+            )
+        )
+        needs_distinct = True
+
+    if filters['date_from']:
         try:
-            start = datetime.strptime(date_from, '%Y-%m-%d')
+            start = datetime.strptime(filters['date_from'], '%Y-%m-%d')
             records_query = records_query.filter(AttendanceRecord.session_date >= start)
         except ValueError:
-            pass
-    if date_to:
+            if with_feedback:
+                flash('Başlangıç tarihi geçersiz.', 'warning')
+    if filters['date_to']:
         try:
-            end = datetime.strptime(date_to, '%Y-%m-%d')
+            end = datetime.strptime(filters['date_to'], '%Y-%m-%d')
             records_query = records_query.filter(AttendanceRecord.session_date <= end)
         except ValueError:
-            pass
+            if with_feedback:
+                flash('Bitiş tarihi geçersiz.', 'warning')
 
-    return records_query.all()
+    if needs_distinct:
+        records_query = records_query.distinct()
+
+    return records_query.order_by(AttendanceRecord.session_date.desc())
